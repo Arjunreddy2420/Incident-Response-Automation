@@ -1,0 +1,69 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: incidents
+          POSTGRES_USER: incidents_user
+          POSTGRES_PASSWORD: incidents_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U incidents_user -d incidents"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://incidents_user:incidents_password@localhost:5432/incidents
+      SLACK_WEBHOOK_URL: ""
+      LOG_LEVEL: INFO
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt black pylint
+
+      - name: Apply database schema
+        run: |
+          psql "$DATABASE_URL" -f database/schema.sql
+          psql "$DATABASE_URL" -f database/init.sql
+        env:
+          PGPASSWORD: incidents_password
+
+      - name: Run tests
+        working-directory: backend
+        run: pytest tests/ -v
+
+      - name: Check formatting
+        working-directory: backend
+        run: black --check app/
+
+      - name: Lint
+        working-directory: backend
+        run: pylint app/ --disable=all --enable=E
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f backend/Dockerfile -t incident-api:latest ./backend
+      # Push to registry if needed (Docker Hub, ECR, etc)
