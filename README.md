@@ -4,7 +4,7 @@ Automated incident ingestion and routing platform that reduces manual triage tim
 raw monitoring alerts (Prometheus, Datadog, PagerDuty) into routed, tracked incidents with
 Slack notifications and MTTR reporting.
 
-## Phase 1 (current): Foundation
+## Phase 1: Foundation
 
 - FastAPI backend backed by PostgreSQL
 - Alert ingestion with automatic team routing and on-call assignment
@@ -12,7 +12,12 @@ Slack notifications and MTTR reporting.
 - Slack notifications on incident creation and resolution
 - Docker Compose for local development, GitHub Actions for CI
 
-Kubernetes manifests, Terraform IaC, and a frontend UI are planned for later phases.
+## Phase 2 (current): Infrastructure
+
+- Kubernetes manifests to run the API on GKE (Deployment, Service, ConfigMap, Secret template)
+- Terraform IaC targeting GCP: GKE cluster + node pool, Cloud SQL for PostgreSQL on a private VPC connection
+
+A frontend UI and advanced alerting are planned for later phases.
 
 ## Project layout
 
@@ -26,6 +31,8 @@ backend/app/
   services/                 business logic (incident, routing, Slack)
   schemas/                    Pydantic request/response models
 database/               schema.sql + init.sql (seed data)
+kubernetes/             Deployment, Service, ConfigMap, Secret template for GKE
+terraform/              GCP infra: VPC, GKE cluster, Cloud SQL Postgres
 ```
 
 ## Local development
@@ -103,3 +110,35 @@ Environment variables (see `.env.example`):
 
 `SLACK_WEBHOOK_URL` should never be committed — set it locally in `.env` (gitignored) or as a
 GitHub Actions secret in CI/CD.
+
+## Infrastructure (GCP)
+
+`terraform/` provisions a VPC, a GKE cluster, and a Cloud SQL for PostgreSQL instance on a
+private IP connected to that VPC.
+
+```
+cd terraform
+cp terraform.tfvars.example terraform.tfvars   # fill in project_id, then set db_password separately
+terraform init
+terraform plan -var="db_password=<your-password>"
+terraform apply -var="db_password=<your-password>"
+```
+
+`db_password` has no default and should never be committed — pass it via `-var`, an
+environment variable (`TF_VAR_db_password`), or a CI secret.
+
+After `apply`, get cluster credentials and deploy the API:
+
+```
+gcloud container clusters get-credentials $(terraform output -raw gke_cluster_name) --zone <zone>
+
+kubectl apply -f kubernetes/configmap.yaml
+kubectl create secret generic incident-api-secrets \
+  --from-literal=DATABASE_URL="$(terraform output -raw database_url)" \
+  --from-literal=SLACK_WEBHOOK_URL='https://hooks.slack.com/services/...'
+kubectl apply -f kubernetes/deployment.yaml
+kubectl apply -f kubernetes/service.yaml
+```
+
+`kubernetes/secrets.yaml` is a template only (placeholder values) — real secrets are created
+imperatively as shown above, or via a secret manager integration, never committed as YAML.

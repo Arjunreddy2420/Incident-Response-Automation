@@ -1,0 +1,7 @@
+project_id  = "your-gcp-project-id"
+region      = "us-central1"
+zone        = "us-central1-a"
+environment = "dev"
+
+# Set via -var, a gitignored terraform.tfvars, or CI secret — never commit a real value.
+# db_password = "..."
