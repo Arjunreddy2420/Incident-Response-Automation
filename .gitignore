@@ -12,3 +12,11 @@ htmlcov/
 .vscode/
 .idea/
 *.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+crash.log
+crash.*.log
