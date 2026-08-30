@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/api/client.ts","./src/api/types.ts","./src/components/Nav.tsx","./src/components/SeverityBadge.tsx","./src/components/StatusBadge.tsx","./src/pages/Dashboard.tsx","./src/pages/EscalationPolicies.tsx","./src/pages/IncidentDetail.tsx","./src/pages/Metrics.tsx"],"version":"5.9.3"}
