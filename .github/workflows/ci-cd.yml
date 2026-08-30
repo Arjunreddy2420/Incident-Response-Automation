@@ -54,11 +54,10 @@ jobs:
         working-directory: backend
         run: black --check app/
 
-<<<<<<< Updated upstream:.github/workflows/ci-cd.yml
       - name: Lint
         working-directory: backend
         run: pylint app/ --disable=all --enable=E
-=======
+
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -81,7 +80,6 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
->>>>>>> Stashed changes:.github/workflows/ci.yml
 
   build:
     needs: [test, frontend]

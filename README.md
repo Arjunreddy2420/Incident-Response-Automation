@@ -2,21 +2,14 @@
 
 [![CI/CD Pipeline](https://github.com/Arjunreddy2420/Incident-Response-Automation/actions/workflows/ci.yml/badge.svg)](https://github.com/Arjunreddy2420/Incident-Response-Automation/actions/workflows/ci.yml)
 
-<<<<<<< Updated upstream
-## Phase 1 (current): Foundation
-=======
 An automated incident ingestion and routing platform. It turns raw monitoring alerts
 (Prometheus, Datadog, PagerDuty, or anything that can send a webhook) into routed, tracked
 incidents — with automatic severity scoring, team routing, on-call assignment, Slack
 notifications, correlation of related alerts, timeout-based escalation, linked runbooks, and
 MTTR reporting — so nobody is manually triaging raw alert noise.
->>>>>>> Stashed changes
 
 ## Table of contents
 
-<<<<<<< Updated upstream
-Kubernetes manifests, Terraform IaC, and a frontend UI are planned for later phases.
-=======
 - [How it works](#how-it-works)
 - [Features](#features)
 - [Architecture](#architecture)
@@ -36,7 +29,6 @@ Kubernetes manifests, Terraform IaC, and a frontend UI are planned for later pha
 This system doesn't read raw application logs. Upstream monitoring tools fire a structured
 alert (`source`, `metric_name`, `threshold`, `current_value`, `alert_message`) at
 `POST /alerts/ingest`. From there:
->>>>>>> Stashed changes
 
 1. **Dedup/correlate** — an exact `metric_name` match against an already-open incident wins
    first; failing that, a team + time-window fallback groups clearly-related alerts (e.g.
@@ -55,18 +47,6 @@ alert (`source`, `metric_name`, `threshold`, `current_value`, `alert_message`) a
 6. **Resolve** — engineers acknowledge and resolve incidents through the API or the frontend
    dashboard, with MTTR computed automatically from the timestamps.
 
-<<<<<<< Updated upstream
-```
-backend/app/
-  main.py            FastAPI app, health + metrics endpoints
-  models.py           SQLAlchemy ORM models (Incident, Alert, EscalationPolicy, IncidentTimeline)
-  database.py          Engine/session setup
-  config.py             Environment-driven settings
-  routers/                incidents, alerts, escalation endpoints
-  services/                 business logic (incident, routing, Slack)
-  schemas/                    Pydantic request/response models
-database/               schema.sql + init.sql (seed data)
-=======
 ## Features
 
 - **Alert ingestion pipeline** — structured alert intake, dedup, correlation, severity scoring,
@@ -117,7 +97,6 @@ flowchart LR
     SCHED -->|poll overdue incidents| DB
     SCHED -->|notify| SLACK
     FE -->|REST| API --> DB
->>>>>>> Stashed changes
 ```
 
 The frontend never talks to Postgres directly — everything goes through the FastAPI backend.
@@ -277,9 +256,6 @@ Environment variables (see `.env.example`):
 | `VITE_API_BASE_URL` (frontend, build-time) | Base URL the SPA calls for the API | `http://localhost:8000` |
 
 `SLACK_WEBHOOK_URL` should never be committed — set it locally in `.env` (gitignored) or as a
-<<<<<<< Updated upstream
-GitHub Actions secret in CI/CD.
-=======
 GitHub Actions secret in CI/CD. `VITE_API_BASE_URL` is inlined by Vite at build time, so for
 Docker it's passed as a build arg (see `docker-compose.yml`), not a runtime env var.
 
@@ -379,4 +355,3 @@ any static host or an additional Deployment.
 - Real ML-based severity classification, once the system has accumulated enough of its own
   labeled incident history to train on.
 - Maintenance windows / alert silencing.
->>>>>>> Stashed changes
