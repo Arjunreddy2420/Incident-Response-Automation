@@ -17,3 +17,11 @@ htmlcov/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+crash.log
+crash.*.log

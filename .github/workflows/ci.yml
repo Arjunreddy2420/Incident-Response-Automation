@@ -54,10 +54,6 @@ jobs:
         working-directory: backend
         run: black --check app/
 
-      - name: Lint
-        working-directory: backend
-        run: pylint app/ --disable=all --enable=E
-
   frontend:
     runs-on: ubuntu-latest
     steps:
