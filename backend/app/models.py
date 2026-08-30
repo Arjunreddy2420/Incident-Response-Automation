@@ -2,7 +2,17 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -50,6 +60,7 @@ class Incident(Base):
         DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    escalated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     alert_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     tags: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=list)
 
@@ -128,3 +139,23 @@ class IncidentTimeline(Base):
     )
 
     incident: Mapped["Incident"] = relationship(back_populates="timeline")
+
+
+class RunBook(Base):
+    __tablename__ = "runbooks"
+    __table_args__ = (UniqueConstraint("team_name", "metric_pattern"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    team_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    metric_pattern: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    url: Mapped[str] = mapped_column(String(500), nullable=False)
+    steps: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=list)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )

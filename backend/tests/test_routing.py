@@ -1,7 +1,10 @@
 import pytest
 
 from app.models import IncidentSeverity
-from app.services.incident_service import determine_severity_from_threshold
+from app.services.incident_service import (
+    determine_severity_from_threshold,
+    escalate_severity_one_tier,
+)
 from app.services.routing_service import get_on_call_engineer, route_alert_to_team
 
 
@@ -33,6 +36,51 @@ def test_route_alert_to_team(metric_name, expected_team):
 )
 def test_determine_severity_from_threshold(threshold, current_value, expected_severity):
     assert determine_severity_from_threshold(threshold, current_value) == expected_severity
+
+
+def test_severity_escalates_for_critical_team():
+    # Ratio alone gives MEDIUM (score 2); payment-platform bumps it to HIGH.
+    baseline = determine_severity_from_threshold(100, 120)
+    weighted = determine_severity_from_threshold(100, 120, team="payment-platform")
+    assert baseline == IncidentSeverity.MEDIUM
+    assert weighted == IncidentSeverity.HIGH
+
+
+def test_severity_team_weighting_does_not_lift_low():
+    # A clearly LOW signal shouldn't get promoted just because of the team.
+    assert (
+        determine_severity_from_threshold(100, 50, team="payment-platform")
+        == IncidentSeverity.LOW
+    )
+
+
+def test_severity_escalates_for_alert_frequency():
+    baseline = determine_severity_from_threshold(100, 120, recent_alert_count=1)
+    frequent = determine_severity_from_threshold(100, 120, recent_alert_count=5)
+    assert baseline == IncidentSeverity.MEDIUM
+    assert frequent == IncidentSeverity.HIGH
+
+
+def test_severity_score_clamps_at_critical():
+    assert (
+        determine_severity_from_threshold(
+            100, 450, team="payment-platform", recent_alert_count=10
+        )
+        == IncidentSeverity.CRITICAL
+    )
+
+
+@pytest.mark.parametrize(
+    "severity,expected",
+    [
+        (IncidentSeverity.LOW, IncidentSeverity.MEDIUM),
+        (IncidentSeverity.MEDIUM, IncidentSeverity.HIGH),
+        (IncidentSeverity.HIGH, IncidentSeverity.CRITICAL),
+        (IncidentSeverity.CRITICAL, IncidentSeverity.CRITICAL),
+    ],
+)
+def test_escalate_severity_one_tier(severity, expected):
+    assert escalate_severity_one_tier(severity) == expected
 
 
 def test_get_on_call_engineer_from_seeded_policy(db_session):

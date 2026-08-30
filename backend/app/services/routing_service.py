@@ -24,10 +24,10 @@ def route_alert_to_team(metric_name: str, severity: IncidentSeverity) -> str:
     return DEFAULT_TEAM
 
 
-def get_on_call_engineer(
+def get_escalation_policy(
     db: Session, team_name: str, severity: IncidentSeverity
-) -> str | None:
-    policy = (
+) -> EscalationPolicy | None:
+    return (
         db.query(EscalationPolicy)
         .filter(
             EscalationPolicy.team_name == team_name,
@@ -35,6 +35,12 @@ def get_on_call_engineer(
         )
         .first()
     )
+
+
+def get_on_call_engineer(
+    db: Session, team_name: str, severity: IncidentSeverity
+) -> str | None:
+    policy = get_escalation_policy(db, team_name, severity)
     return policy.on_call_engineer if policy else None
 
 
@@ -43,12 +49,5 @@ def get_slack_channel_for_team(
 ) -> str | None:
     if not team_name:
         return None
-    policy = (
-        db.query(EscalationPolicy)
-        .filter(
-            EscalationPolicy.team_name == team_name,
-            EscalationPolicy.severity_level == severity,
-        )
-        .first()
-    )
+    policy = get_escalation_policy(db, team_name, severity)
     return policy.slack_channel if policy else None

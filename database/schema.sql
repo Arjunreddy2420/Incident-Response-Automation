@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS incidents (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP,
+    escalated_at TIMESTAMP,
     alert_count INT NOT NULL DEFAULT 0,
     tags TEXT[] DEFAULT '{}'
 );
@@ -58,6 +59,20 @@ CREATE TABLE IF NOT EXISTS incident_timeline (
 
 CREATE INDEX IF NOT EXISTS idx_timeline_incident ON incident_timeline (incident_id);
 
+CREATE TABLE IF NOT EXISTS runbooks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    team_name VARCHAR(100) NOT NULL,
+    metric_pattern VARCHAR(255),
+    title VARCHAR(255) NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    steps TEXT[] DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (team_name, metric_pattern)
+);
+
+CREATE INDEX IF NOT EXISTS idx_runbooks_team ON runbooks (team_name);
+
 -- Keep updated_at current on every row change.
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
@@ -70,6 +85,12 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trg_incidents_updated_at ON incidents;
 CREATE TRIGGER trg_incidents_updated_at
     BEFORE UPDATE ON incidents
+    FOR EACH ROW
+    EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_runbooks_updated_at ON runbooks;
+CREATE TRIGGER trg_runbooks_updated_at
+    BEFORE UPDATE ON runbooks
     FOR EACH ROW
     EXECUTE FUNCTION set_updated_at();
 

@@ -12,3 +12,19 @@ htmlcov/
 .vscode/
 .idea/
 *.log
+<<<<<<< Updated upstream
+=======
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+crash.log
+crash.*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+>>>>>>> Stashed changes

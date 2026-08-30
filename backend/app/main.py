@@ -1,19 +1,48 @@
 import logging
+from contextlib import asynccontextmanager
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import get_db
+from app.database import SessionLocal, get_db
 from app.models import Incident, IncidentStatus
-from app.routers import alerts, escalation, incidents
+from app.routers import alerts, escalation, incidents, runbooks
+from app.services.incident_service import check_and_escalate_overdue_incidents
 
 logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Incident Response Automation", version="1.0.0")
+scheduler = BackgroundScheduler()
+
+
+def _run_escalation_check() -> None:
+    db = SessionLocal()
+    try:
+        check_and_escalate_overdue_incidents(db)
+    except Exception:
+        logger.exception("Escalation check job failed")
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler.add_job(
+        _run_escalation_check,
+        "interval",
+        seconds=settings.ESCALATION_CHECK_INTERVAL_SECONDS,
+        id="escalation_check",
+    )
+    scheduler.start()
+    yield
+    scheduler.shutdown(wait=False)
+
+
+app = FastAPI(title="Incident Response Automation", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,6 +55,7 @@ app.add_middleware(
 app.include_router(incidents.router)
 app.include_router(alerts.router)
 app.include_router(escalation.router)
+app.include_router(runbooks.router)
 
 
 @app.get("/health")
