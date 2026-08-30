@@ -14,9 +14,11 @@ from app.schemas.incident_schemas import (
     IncidentResolveRequest,
     IncidentResponse,
     IncidentUpdateRequest,
+    RunBookResponse,
 )
 from app.services import incident_service
 from app.services.routing_service import get_slack_channel_for_team
+from app.services.runbook_service import find_runbook_for_incident
 from app.services.slack_service import (
     format_incident_created_message,
     format_incident_resolved_message,
@@ -62,6 +64,17 @@ def list_incidents(
 @router.get("/{incident_id}", response_model=IncidentDetailResponse)
 def get_incident(incident_id: uuid.UUID, db: Session = Depends(get_db)):
     return _get_incident_or_404(db, incident_id)
+
+
+@router.get("/{incident_id}/runbook", response_model=RunBookResponse)
+def get_incident_runbook(incident_id: uuid.UUID, db: Session = Depends(get_db)):
+    incident = _get_incident_or_404(db, incident_id)
+    runbook = find_runbook_for_incident(db, incident)
+    if not runbook:
+        raise HTTPException(
+            status_code=404, detail="No runbook linked to this incident"
+        )
+    return runbook
 
 
 @router.patch("/{incident_id}", response_model=IncidentResponse)

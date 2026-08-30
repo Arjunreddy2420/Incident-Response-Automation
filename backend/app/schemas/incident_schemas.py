@@ -132,3 +132,34 @@ class EscalationPolicyResponse(BaseModel):
     backup_engineer: str | None
     escalation_time_minutes: int
     slack_channel: str | None
+
+
+# ---- RunBooks ----
+
+
+class RunBookCreateRequest(BaseModel):
+    team_name: str
+    metric_pattern: str | None = None
+    title: str
+    url: str
+    steps: list[str] | None = None
+
+
+class RunBookUpdateRequest(BaseModel):
+    metric_pattern: str | None = None
+    title: str | None = None
+    url: str | None = None
+    steps: list[str] | None = None
+
+
+class RunBookResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    team_name: str
+    metric_pattern: str | None
+    title: str
+    url: str
+    steps: list[str] | None
+    created_at: datetime
+    updated_at: datetime
